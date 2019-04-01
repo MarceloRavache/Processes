@@ -2,26 +2,41 @@ import java.net.*;
 import java.io.*;
 import java.util.Scanner;
 
-public class ChatTCPClient {
+public class ChatTCPServer {
     public static void main (String args[]) {
-        // java conectar ip1
-        Socket s = null;
         try{
-            Scanner entrada = new Scanner(System.in);
             int serverPort = 7896;
-            s = new Socket(args[0], serverPort);
-            DataInputStream in = new DataInputStream( s.getInputStream());
-            DataOutputStream out =new DataOutputStream( s.getOutputStream());
-
-            while(true){
+            ServerSocket listenSocket = new ServerSocket(serverPort);
+            Socket clientSocket = listenSocket.accept();
+            Connection c = new Connection(clientSocket);
+        } catch(IOException e) {System.out.println("Listen socket:"+e.getMessage());}
+    }
+}
+class Connection extends Thread {
+    DataInputStream in;
+    DataOutputStream out;
+    Socket clientSocket;
+    public Connection (Socket aClientSocket) {
+        try {
+            clientSocket = aClientSocket;
+            in = new DataInputStream( clientSocket.getInputStream());
+            out =new DataOutputStream( clientSocket.getOutputStream());
+            this.start();
+        } catch(IOException e) {System.out.println("Connection:"+e.getMessage());}
+    }
+    public void run(){
+        try {
+            Scanner entrada = new Scanner(System.in);
+            while(true) {
+                String data = in.readUTF();
+                System.out.println("Cliente: "+data);
                 String linha = entrada.nextLine();
                 out.writeUTF(linha);
-                String data = in.readUTF();
-                System.out.println("Servidor: "+data);
             }
-        }catch (UnknownHostException e){System.out.println("Socket:"+e.getMessage());
         }catch (EOFException e){System.out.println("EOF:"+e.getMessage());
-        }catch (IOException e){System.out.println("readline:"+e.getMessage());
-        }finally {if(s!=null) try {s.close();}catch (IOException e){System.out.println("close:"+e.getMessage());}}
+        } catch(IOException e) {System.out.println("readline:"+e.getMessage());
+        } finally{ try {clientSocket.close();}catch (IOException e){/*close failed*/}}
+
+
     }
 }
